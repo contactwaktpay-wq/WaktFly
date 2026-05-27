@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WaktFly - Test Live</title>
+    <!-- Tailwind pour le design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase Library -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .parcel-card { animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 pb-20">
+
+    <!-- HEADER -->
+    <header class="bg-slate-900 text-white p-6 rounded-b-[40px] shadow-xl mb-6">
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-black tracking-tighter">Wakt<span class="text-emerald-400">Fly</span></h1>
+            <span class="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-[10px] font-bold uppercase">Test Direct</span>
+        </div>
+        <p class="mt-4 text-slate-400 text-xs">Connecté à Supabase : <span class="text-white">nmdartir...</span></p>
+    </header>
+
+    <main class="px-6 space-y-6">
+        <div class="flex justify-between items-center">
+            <h2 class="font-extrabold text-slate-800 text-lg">Colis en temps réel</h2>
+            <button onclick="loadParcels()" class="p-2 bg-white rounded-full shadow-sm active:rotate-180 transition-transform">
+                <i data-lucide="refresh-cw" class="w-4 h-4 text-slate-600"></i>
+            </button>
+        </div>
+
+        <!-- LISTE DES COLIS -->
+        <div id="parcel-list" class="space-y-4">
+            <!-- Les colis s'afficheront ici -->
+            <div class="text-center py-10">
+                <div class="animate-spin inline-block w-6 h-6 border-4 border-emerald-500 border-t-transparent rounded-full mb-2"></div>
+                <p class="text-slate-400 text-sm">Connexion à la base de données...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- NAVIGATION BASSE -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-md border-t border-slate-100 p-4 flex justify-around items-center">
+        <div class="flex flex-col items-center text-emerald-600">
+            <i data-lucide="package" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Colis</span>
+        </div>
+        <div class="flex flex-col items-center text-slate-400" onclick="alert('Bientôt disponible')">
+            <i data-lucide="plus-circle" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Ajouter</span>
+        </div>
+    </nav>
+
+    <script>
+        // CONFIGURATION SUPABASE (Tes vraies clés)
+        const SUPABASE_URL = 'https://nmdartirynitkdgpwmra.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ykVebBXbVYSMHD_hDrsmzQ_JNjqBy5U';
+        
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // FONCTION POUR CHARGER LES COLIS
+        async function loadParcels() {
+            const listElement = document.getElementById('parcel-list');
+            
+            const { data, error } = await supabaseClient
+                .from('parcels')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                listElement.innerHTML = `<p class="text-red-500 text-center">Erreur : ${error.message}</p>`;
+                return;
+            }
+
+            if (data.length === 0) {
+                listElement.innerHTML = `<p class="text-slate-400 text-center py-10">Aucun colis trouvé dans la base.</p>`;
+                return;
+            }
+
+            listElement.innerHTML = ''; // On vide la liste avant d'afficher
+
+            data.forEach(parcel => {
+                const isDelivered = parcel.status === 'livre';
+                const card = `
+                    <div class="parcel-card bg-white p-5 rounded-[30px] shadow-sm border border-slate-100">
+                        <div class="flex justify-between items-start mb-3">
+                            <span class="bg-slate-100 text-slate-500 text-[10px] font-black px-2 py-1 rounded-lg">${parcel.short_id}</span>
+                            <span class="text-[10px] font-black uppercase ${isDelivered ? 'text-emerald-500' : 'text-blue-500'}">
+                                ${parcel.status}
+                            </span>
+                        </div>
+                        <h3 class="font-bold text-slate-900">${parcel.customer_name}</h3>
+                        <p class="text-xs text-slate-500 mb-4">${parcel.zone} • <span class="italic text-slate-400">${parcel.landmark}</span></p>
+                        
+                        <div class="flex justify-between items-center pt-4 border-t border-slate-50">
+                            <div>
+                                <p class="text-[10px] text-slate-400 font-bold uppercase">À collecter</p>
+                                <p class="text-xl font-black text-slate-900">${parcel.total_to_pay} <span class="text-xs font-normal">MRU</span></p>
+                            </div>
+                            ${!isDelivered ? `
+                                <button onclick="markAsDelivered(${parcel.id})" class="bg-slate-900 text-white px-5 py-2 rounded-2xl text-xs font-bold active:scale-95 transition-transform">
+                                    Marquer Livré
+                                </button>
+                            ` : `
+                                <div class="bg-emerald-100 text-emerald-600 p-2 rounded-full">
+                                    <i data-lucide="check-circle-2" class="w-5 h-5"></i>
+                                </div>
+                            `}
+                        </div>
+                    </div>
+                `;
+                listElement.innerHTML += card;
+            });
+            lucide.createIcons(); // Relancer les icônes
+        }
+
+        // FONCTION POUR METTRE À JOUR LE STATUT
+        async function markAsDelivered(id) {
+            const { error } = await supabaseClient
+                .from('parcels')
+                .update({ status: 'livre' })
+                .eq('id', id);
+
+            if (error) {
+                alert("Erreur lors de la mise à jour : " + error.message);
+            } else {
+                loadParcels(); // Recharger la liste immédiatement
+            }
+        }
+
+        // Lancement au démarrage
+        window.onload = () => {
+            loadParcels();
+            lucide.createIcons();
+        };
+    </script>
+</body>
+</html>
