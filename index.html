@@ -3,67 +3,93 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WaktFly - Gestion Directe</title>
+    <title>WaktFly Enterprise - Logistique</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
-        .card { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .view { display: none; }
+        .view.active { display: block; animation: slideUp 0.3s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(10px); }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-900 pb-24">
+<body class="bg-slate-50 text-slate-900">
 
-    <!-- HEADER -->
-    <header class="bg-slate-900 text-white p-8 rounded-b-[40px] shadow-2xl mb-8">
-        <div class="flex justify-between items-center">
-            <div>
-                <h1 class="text-3xl font-black tracking-tighter">Wakt<span class="text-emerald-400">Fly</span></h1>
-                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Gestion Logistique</p>
-            </div>
-            <div class="bg-emerald-500/20 p-3 rounded-2xl">
-                <i data-lucide="database" class="text-emerald-400 w-6 h-6"></i>
-            </div>
-        </div>
-    </header>
+    <!-- ================= NAVIGATION BASSE (Sélecteur d'Espace) ================= -->
+    <nav class="fixed bottom-0 left-0 right-0 glass border-t border-slate-200 p-4 z-50 flex justify-around items-center">
+        <button onclick="showView('merchant')" id="nav-merchant" class="flex flex-col items-center text-emerald-600">
+            <i data-lucide="store" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Marchand</span>
+        </button>
+        <button onclick="showView('rider')" id="nav-rider" class="flex flex-col items-center text-slate-400">
+            <i data-lucide="bike" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Livreur</span>
+        </button>
+        <button onclick="showView('tracking')" id="nav-tracking" class="flex flex-col items-center text-slate-400">
+            <i data-lucide="search" class="w-6 h-6"></i>
+            <span class="text-[10px] font-bold mt-1">Suivi</span>
+        </button>
+    </nav>
 
-    <main class="px-6 space-y-8">
-        <!-- STATS RAPIDES -->
-        <div class="grid grid-cols-2 gap-4">
-            <div class="bg-white p-5 rounded-[30px] shadow-sm border border-slate-100">
-                <p class="text-[10px] font-black text-slate-400 uppercase">Total Colis</p>
-                <p id="count-total" class="text-2xl font-black">0</p>
+    <!-- ================= ESPACE MARCHAND ================= -->
+    <section id="view-merchant" class="view active pb-32">
+        <header class="bg-slate-900 text-white p-8 rounded-b-[40px] shadow-xl">
+            <div class="flex justify-between items-center mb-6">
+                <h1 class="text-2xl font-black tracking-tighter text-emerald-400">WaktFly</h1>
+                <button onclick="openModal()" class="bg-emerald-500 text-white px-4 py-2 rounded-2xl text-xs font-bold">+ Nouveau Colis</button>
             </div>
-            <div class="bg-white p-5 rounded-[30px] shadow-sm border border-slate-100">
-                <p class="text-[10px] font-black text-slate-400 uppercase">Livrés</p>
-                <p id="count-delivered" class="text-2xl font-black text-emerald-500">0</p>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-white/10 p-4 rounded-3xl border border-white/5">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">Collecté (COD)</p>
+                    <p id="m-stat-cod" class="text-xl font-black">0 MRU</p>
+                </div>
+                <div class="bg-white/10 p-4 rounded-3xl border border-white/5">
+                    <p class="text-[10px] text-slate-400 font-bold uppercase">En cours</p>
+                    <p id="m-stat-pending" class="text-xl font-black text-orange-400">0</p>
+                </div>
             </div>
-        </div>
+        </header>
+        <main class="p-6 space-y-4">
+            <h2 class="font-black text-slate-800">Toutes les expéditions</h2>
+            <div id="merchant-list" class="space-y-3"></div>
+        </main>
+    </section>
 
-        <!-- ACTIONS -->
-        <div class="flex justify-between items-center">
-            <h2 class="text-xl font-black text-slate-800">Livraisons</h2>
-            <button onclick="openModal()" class="bg-slate-900 text-white px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 active:scale-95 transition">
-                <i data-lucide="plus" class="w-5 h-5"></i> Nouveau
-            </button>
-        </div>
+    <!-- ================= ESPACE LIVREUR ================= -->
+    <section id="view-rider" class="view pb-32">
+        <header class="p-8">
+            <h1 class="text-3xl font-black">Ma Feuille de route</h1>
+            <p class="text-slate-400 text-sm">Livraisons à effectuer aujourd'hui</p>
+        </header>
+        <main class="p-6 space-y-6" id="rider-list"></main>
+    </section>
 
-        <!-- LISTE -->
-        <div id="parcel-list" class="space-y-4">
-            <div class="text-center py-20 text-slate-400">
-                <div class="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-4"></div>
-                <p>Connexion à Supabase...</p>
+    <!-- ================= ESPACE SUIVI CLIENT ================= -->
+    <section id="view-tracking" class="view pb-32">
+        <header class="p-8 text-center">
+            <h1 class="text-3xl font-black mb-2">Suivi Public</h1>
+            <p class="text-slate-400 text-sm">Entrez votre code WF pour suivre votre colis</p>
+        </header>
+        <main class="p-6">
+            <div class="flex gap-2 mb-8">
+                <input id="track-input" type="text" placeholder="Ex: WF-1234" class="flex-1 p-4 bg-white rounded-2xl border border-slate-200 font-bold uppercase">
+                <button onclick="trackParcel()" class="bg-slate-900 text-white px-6 rounded-2xl font-bold">Chercher</button>
             </div>
-        </div>
-    </main>
+            <div id="track-result" class="hidden bg-white p-8 rounded-[40px] shadow-sm border border-slate-100">
+                <!-- Timeline injectée ici -->
+            </div>
+        </main>
+    </section>
 
-    <!-- MODAL AJOUT -->
-    <div id="modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
-        <div class="bg-white w-full max-w-md rounded-[40px] p-8 space-y-4 shadow-2xl card">
-            <h3 class="text-2xl font-black mb-2">Nouveau Colis</h3>
+    <!-- ================= MODAL AJOUT (MARCHAND) ================= -->
+    <div id="modal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 space-y-4 shadow-2xl">
+            <h3 class="text-2xl font-black">Nouveau Colis</h3>
             <input id="in-name" type="text" placeholder="Nom du client" class="w-full p-4 bg-slate-100 rounded-2xl border-none font-bold">
+            <input id="in-phone" type="tel" placeholder="Téléphone (ex: 44112233)" class="w-full p-4 bg-slate-100 rounded-2xl border-none font-bold">
             <div class="grid grid-cols-2 gap-2">
                 <input id="in-zone" type="text" placeholder="Zone (ex: Ksar)" class="p-4 bg-slate-100 rounded-2xl border-none font-bold">
                 <input id="in-price" type="number" placeholder="Prix (MRU)" class="p-4 bg-slate-100 rounded-2xl border-none font-bold">
@@ -71,75 +97,86 @@
             <input id="in-landmark" type="text" placeholder="Point de repère" class="w-full p-4 bg-slate-100 rounded-2xl border-none font-bold">
             <div class="flex gap-3 pt-4">
                 <button onclick="closeModal()" class="flex-1 p-4 font-bold text-slate-400">Annuler</button>
-                <button onclick="createParcel()" class="flex-1 p-4 bg-emerald-500 text-white rounded-2xl font-bold shadow-lg shadow-emerald-200">Enregistrer</button>
+                <button onclick="createParcel()" class="flex-1 p-4 bg-emerald-500 text-white rounded-2xl font-bold">Enregistrer</button>
             </div>
         </div>
     </div>
 
     <script>
-        // CONFIGURATION DIRECTE
         const SUPABASE_URL = 'https://nmdartirynitkdgpwmra.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ykVebBXbVYSMHD_hDrsmzQ_JNjqBy5U';
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // CHARGEMENT DES DONNÉES
-        async function loadData() {
-            const { data, error } = await supabaseClient
-                .from('parcels')
-                .select('*')
-                .order('created_at', { ascending: false });
-
-            if (error) {
-                alert("Erreur Supabase : " + error.message);
-                return;
-            }
-
-            const list = document.getElementById('parcel-list');
-            const totalEl = document.getElementById('count-total');
-            const deliveredEl = document.getElementById('count-delivered');
-
-            totalEl.innerText = data.length;
-            deliveredEl.innerText = data.filter(p => p.status === 'livre').length;
-
-            if (data.length === 0) {
-                list.innerHTML = `<div class="text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-slate-200">
-                    <p class="text-slate-400 font-bold">Aucun colis en base.<br>Commencez par en ajouter un !</p>
-                </div>`;
-            } else {
-                list.innerHTML = data.map(p => `
-                    <div class="card bg-white p-6 rounded-[35px] shadow-sm border border-slate-100 flex justify-between items-center">
-                        <div class="space-y-1">
-                            <div class="flex items-center gap-2">
-                                <span class="text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded-md text-slate-500">${p.short_id}</span>
-                                <span class="text-[10px] font-black uppercase ${p.status === 'livre' ? 'text-emerald-500' : 'text-blue-500'}">${p.status}</span>
-                            </div>
-                            <p class="font-bold text-slate-900">${p.customer_name}</p>
-                            <p class="text-xs text-slate-400">${p.zone} • <span class="italic">${p.landmark || ''}</span></p>
-                        </div>
-                        <div class="text-right space-y-2">
-                            <p class="font-black text-lg text-slate-900">${p.total_to_pay} <span class="text-[10px]">MRU</span></p>
-                            ${p.status !== 'livre' ? `
-                                <button onclick="markDelivered(${p.id})" class="bg-emerald-500 text-white text-[10px] font-black px-3 py-2 rounded-xl shadow-md active:scale-90 transition">LIVRER</button>
-                            ` : `<i data-lucide="check-circle" class="text-emerald-500 w-6 h-6 ml-auto"></i>`}
-                        </div>
-                    </div>
-                `).join('');
-            }
+        // --- NAVIGATION ---
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById('view-' + viewId).classList.add('active');
+            
+            document.querySelectorAll('nav button').forEach(btn => btn.classList.replace('text-emerald-600', 'text-slate-400'));
+            document.getElementById('nav-' + viewId).classList.replace('text-slate-400', 'text-emerald-600');
+            
+            if(viewId !== 'tracking') loadData();
             lucide.createIcons();
         }
 
-        // ACTIONS
+        // --- LOGIQUE DONNÉES ---
+        async function loadData() {
+            const { data: parcels, error } = await supabase.from('parcels').select('*').order('created_at', { ascending: false });
+            if (error) return;
+
+            // Rendu Marchand
+            const mList = document.getElementById('merchant-list');
+            let totalCod = 0; let pending = 0;
+            mList.innerHTML = parcels.map(p => {
+                if(p.status === 'livre') totalCod += p.total_to_pay;
+                else pending++;
+                return `
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
+                        <div>
+                            <p class="font-bold text-sm">${p.customer_name}</p>
+                            <p class="text-[10px] font-black uppercase ${p.status === 'livre' ? 'text-emerald-500' : 'text-blue-500'}">${p.status} • ${p.short_id}</p>
+                        </div>
+                        <p class="font-black text-sm">${p.total_to_pay} MRU</p>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('m-stat-cod').innerText = totalCod + ' MRU';
+            document.getElementById('m-stat-pending').innerText = pending;
+
+            // Rendu Livreur
+            const rList = document.getElementById('rider-list');
+            const tasks = parcels.filter(p => p.status !== 'livre');
+            rList.innerHTML = tasks.map(p => `
+                <div class="bg-slate-900 text-white p-6 rounded-[40px] shadow-xl space-y-4">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-xl font-black">${p.customer_name}</h3>
+                        <span class="bg-emerald-500 text-[10px] font-black px-2 py-1 rounded-lg uppercase">${p.zone}</span>
+                    </div>
+                    <p class="text-slate-400 text-sm italic">"${p.landmark}"</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <a href="tel:${p.customer_phone}" class="bg-slate-800 p-4 rounded-2xl text-center"><i data-lucide="phone" class="mx-auto"></i></a>
+                        <button onclick="updateStatus(${p.id}, 'livre')" class="bg-emerald-500 text-white font-black rounded-2xl text-xs uppercase">Livré (${p.total_to_pay} MRU)</button>
+                    </div>
+                </div>
+            `).join('');
+            if(tasks.length === 0) rList.innerHTML = '<p class="text-center text-slate-400 py-20 font-bold">Aucune livraison en attente.</p>';
+            
+            lucide.createIcons();
+        }
+
         async function createParcel() {
             const name = document.getElementById('in-name').value;
+            const phone = document.getElementById('in-phone').value;
             const zone = document.getElementById('in-zone').value;
             const price = document.getElementById('in-price').value;
             const landmark = document.getElementById('in-landmark').value;
 
-            if(!name || !price) return alert("Nom et Prix obligatoires");
+            if(!name || !price) return alert("Nom et Prix requis");
 
-            const { error } = await supabaseClient.from('parcels').insert([{
+            const { error } = await supabase.from('parcels').insert([{
                 short_id: 'WF-' + Math.floor(1000 + Math.random() * 9000),
                 customer_name: name,
+                customer_phone: phone,
                 zone: zone,
                 landmark: landmark,
                 product_price: parseFloat(price),
@@ -148,27 +185,51 @@
                 status: 'en_attente'
             }]);
 
-            if (error) alert(error.message);
-            else {
-                closeModal();
-                loadData();
+            if(!error) { closeModal(); loadData(); }
+        }
+
+        async function updateStatus(id, status) {
+            await supabase.from('parcels').update({ status }).eq('id', id);
+            loadData();
+        }
+
+        async function trackParcel() {
+            const code = document.getElementById('track-input').value.toUpperCase();
+            const { data, error } = await supabase.from('parcels').select('*').eq('short_id', code).single();
+            
+            const res = document.getElementById('track-result');
+            res.classList.remove('hidden');
+            
+            if(data) {
+                const steps = ['en_attente', 'en_cours', 'livre'];
+                const currentIdx = steps.indexOf(data.status);
+                res.innerHTML = `
+                    <h3 class="text-center font-black text-xl mb-8">Colis ${data.short_id}</h3>
+                    <div class="space-y-8">
+                        ${steps.map((s, i) => `
+                            <div class="flex items-center gap-4 ${i <= currentIdx ? 'text-emerald-600' : 'text-slate-300'}">
+                                <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center ${i <= currentIdx ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200'}">
+                                    <i data-lucide="${i <= currentIdx ? 'check' : 'circle'}" class="w-4 h-4"></i>
+                                </div>
+                                <p class="font-bold uppercase text-xs">${s.replace('_', ' ')}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="mt-8 pt-8 border-t border-slate-50 text-center">
+                        <p class="text-slate-400 text-xs uppercase font-black">Total à payer</p>
+                        <p class="text-3xl font-black text-slate-900">${data.total_to_pay} MRU</p>
+                    </div>
+                `;
+            } else {
+                res.innerHTML = '<p class="text-center text-red-500 font-bold">Code introuvable.</p>';
             }
+            lucide.createIcons();
         }
 
-        async function markDelivered(id) {
-            const { error } = await supabaseClient.from('parcels').update({ status: 'livre' }).eq('id', id);
-            if (error) alert(error.message);
-            else loadData();
-        }
-
-        // UI
         function openModal() { document.getElementById('modal').classList.remove('hidden'); }
         function closeModal() { document.getElementById('modal').classList.add('hidden'); }
 
-        window.onload = () => {
-            loadData();
-            lucide.createIcons();
-        };
+        window.onload = () => { loadData(); lucide.createIcons(); };
     </script>
 </body>
 </html>
