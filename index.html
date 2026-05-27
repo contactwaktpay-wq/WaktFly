@@ -3,139 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WaktFly - Test</title>
-    <!-- Chargement des bibliothèques via CDN -->
+    <title>WaktFly - Gestion Directe</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
-        .view { display: none; }
-        .view.active { display: block; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .card { animation: fadeIn 0.5s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body class="bg-slate-50 font-sans antialiased">
+<body class="bg-slate-50 text-slate-900 pb-24">
 
-    <!-- 1. ECRAN DE CONNEXION -->
-    <div id="view-login" class="view active min-h-screen flex items-center justify-center p-6">
-        <div class="w-full max-w-md text-center space-y-8">
-            <h1 class="text-4xl font-black text-slate-900">Wakt<span class="text-emerald-500">Fly</span></h1>
-            <div class="bg-white p-8 rounded-[30px] shadow-xl space-y-6">
-                <p class="font-bold text-slate-700">Entrez votre numéro Bankily</p>
-                <input id="login-phone" type="tel" placeholder="Ex: 44112233" class="w-full p-4 bg-slate-100 rounded-2xl border-none text-center text-2xl font-bold">
-                <button onclick="checkAccess()" class="w-full bg-slate-900 text-white p-4 rounded-2xl font-bold text-lg">Accéder</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 2. ECRAN DE PAIEMENT -->
-    <div id="view-payment" class="view min-h-screen flex items-center justify-center p-6">
-        <div class="w-full max-w-md text-center space-y-6">
-            <div class="bg-white p-8 rounded-[30px] shadow-xl border-2 border-orange-500">
-                <h2 class="text-2xl font-black mb-4">Accès restreint</h2>
-                <p class="text-slate-500 mb-6">Payez 500 MRU au Bankily : <br><span class="text-slate-900 font-black text-xl">44 00 00 00</span></p>
-                <button onclick="window.location.reload()" class="w-full bg-slate-100 p-4 rounded-2xl font-bold">J'ai déjà payé</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 3. DASHBOARD -->
-    <div id="view-app" class="view">
-        <header class="bg-slate-900 text-white p-6 flex justify-between items-center">
+    <!-- HEADER -->
+    <header class="bg-slate-900 text-white p-8 rounded-b-[40px] shadow-2xl mb-8">
+        <div class="flex justify-between items-center">
             <div>
-                <h2 class="font-black">WaktFly</h2>
-                <p id="display-phone" class="text-[10px] text-slate-400"></p>
+                <h1 class="text-3xl font-black tracking-tighter">Wakt<span class="text-emerald-400">Fly</span></h1>
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest mt-1">Gestion Logistique</p>
             </div>
-            <button onclick="window.location.reload()" class="text-slate-400">Quitter</button>
-        </header>
-        <main class="p-6 space-y-6">
-            <div class="flex justify-between items-center">
-                <h3 class="font-black">Mes Colis</h3>
-                <button onclick="addParcel()" class="bg-emerald-500 text-white px-4 py-2 rounded-full font-bold text-sm">+ Nouveau</button>
+            <div class="bg-emerald-500/20 p-3 rounded-2xl">
+                <i data-lucide="database" class="text-emerald-400 w-6 h-6"></i>
             </div>
-            <div id="parcel-list" class="space-y-4"></div>
-        </main>
+        </div>
+    </header>
+
+    <main class="px-6 space-y-8">
+        <!-- STATS RAPIDES -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-white p-5 rounded-[30px] shadow-sm border border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase">Total Colis</p>
+                <p id="count-total" class="text-2xl font-black">0</p>
+            </div>
+            <div class="bg-white p-5 rounded-[30px] shadow-sm border border-slate-100">
+                <p class="text-[10px] font-black text-slate-400 uppercase">Livrés</p>
+                <p id="count-delivered" class="text-2xl font-black text-emerald-500">0</p>
+            </div>
+        </div>
+
+        <!-- ACTIONS -->
+        <div class="flex justify-between items-center">
+            <h2 class="text-xl font-black text-slate-800">Livraisons</h2>
+            <button onclick="openModal()" class="bg-slate-900 text-white px-6 py-3 rounded-full font-bold shadow-lg flex items-center gap-2 active:scale-95 transition">
+                <i data-lucide="plus" class="w-5 h-5"></i> Nouveau
+            </button>
+        </div>
+
+        <!-- LISTE -->
+        <div id="parcel-list" class="space-y-4">
+            <div class="text-center py-20 text-slate-400">
+                <div class="animate-spin inline-block w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full mb-4"></div>
+                <p>Connexion à Supabase...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL AJOUT -->
+    <div id="modal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-[40px] p-8 space-y-4 shadow-2xl card">
+            <h3 class="text-2xl font-black mb-2">Nouveau Colis</h3>
+            <input id="in-name" type="text" placeholder="Nom du client" class="w-full p-4 bg-slate-100 rounded-2xl border-none font-bold">
+            <div class="grid grid-cols-2 gap-2">
+                <input id="in-zone" type="text" placeholder="Zone (ex: Ksar)" class="p-4 bg-slate-100 rounded-2xl border-none font-bold">
+                <input id="in-price" type="number" placeholder="Prix (MRU)" class="p-4 bg-slate-100 rounded-2xl border-none font-bold">
+            </div>
+            <input id="in-landmark" type="text" placeholder="Point de repère" class="w-full p-4 bg-slate-100 rounded-2xl border-none font-bold">
+            <div class="flex gap-3 pt-4">
+                <button onclick="closeModal()" class="flex-1 p-4 font-bold text-slate-400">Annuler</button>
+                <button onclick="createParcel()" class="flex-1 p-4 bg-emerald-500 text-white rounded-2xl font-bold shadow-lg shadow-emerald-200">Enregistrer</button>
+            </div>
+        </div>
     </div>
 
     <script>
-        // CONFIGURATION
+        // CONFIGURATION DIRECTE
         const SUPABASE_URL = 'https://nmdartirynitkdgpwmra.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ykVebBXbVYSMHD_hDrsmzQ_JNjqBy5U';
-        
-        // Initialisation sécurisée
-        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let currentPhone = "";
-
-        async function checkAccess() {
-            const phone = document.getElementById('login-phone').value.trim();
-            if (!phone) { alert("Entrez un numéro"); return; }
-
-            try {
-                const { data, error } = await supabaseClient
-                    .from('authorized_merchants')
-                    .select('*')
-                    .eq('phone', phone);
-
-                if (error) throw error;
-
-                if (data && data.length > 0 && data[0].is_active) {
-                    currentPhone = phone;
-                    showView('app');
-                    loadParcels();
-                } else {
-                    if (!data || data.length === 0) {
-                        await supabaseClient.from('authorized_merchants').insert([{ phone: phone, is_active: false }]);
-                    }
-                    showView('payment');
-                }
-            } catch (e) {
-                alert("Erreur : " + e.message);
-            }
-        }
-
-        function showView(id) {
-            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-            document.getElementById('view-' + id).classList.add('active');
-            if(window.lucide) window.lucide.createIcons();
-        }
-
-        async function loadParcels() {
-            document.getElementById('display-phone').innerText = currentPhone;
+        // CHARGEMENT DES DONNÉES
+        async function loadData() {
             const { data, error } = await supabaseClient
                 .from('parcels')
                 .select('*')
-                .eq('merchant_phone', currentPhone);
-            
+                .order('created_at', { ascending: false });
+
+            if (error) {
+                alert("Erreur Supabase : " + error.message);
+                return;
+            }
+
             const list = document.getElementById('parcel-list');
-            if (data && data.length > 0) {
+            const totalEl = document.getElementById('count-total');
+            const deliveredEl = document.getElementById('count-delivered');
+
+            totalEl.innerText = data.length;
+            deliveredEl.innerText = data.filter(p => p.status === 'livre').length;
+
+            if (data.length === 0) {
+                list.innerHTML = `<div class="text-center py-20 bg-white rounded-[40px] border-2 border-dashed border-slate-200">
+                    <p class="text-slate-400 font-bold">Aucun colis en base.<br>Commencez par en ajouter un !</p>
+                </div>`;
+            } else {
                 list.innerHTML = data.map(p => `
-                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex justify-between items-center">
-                        <div><p class="font-bold">${p.customer_name}</p><p class="text-[10px] uppercase text-slate-400">${p.status}</p></div>
-                        <p class="font-black">${p.total_to_pay} MRU</p>
+                    <div class="card bg-white p-6 rounded-[35px] shadow-sm border border-slate-100 flex justify-between items-center">
+                        <div class="space-y-1">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded-md text-slate-500">${p.short_id}</span>
+                                <span class="text-[10px] font-black uppercase ${p.status === 'livre' ? 'text-emerald-500' : 'text-blue-500'}">${p.status}</span>
+                            </div>
+                            <p class="font-bold text-slate-900">${p.customer_name}</p>
+                            <p class="text-xs text-slate-400">${p.zone} • <span class="italic">${p.landmark || ''}</span></p>
+                        </div>
+                        <div class="text-right space-y-2">
+                            <p class="font-black text-lg text-slate-900">${p.total_to_pay} <span class="text-[10px]">MRU</span></p>
+                            ${p.status !== 'livre' ? `
+                                <button onclick="markDelivered(${p.id})" class="bg-emerald-500 text-white text-[10px] font-black px-3 py-2 rounded-xl shadow-md active:scale-90 transition">LIVRER</button>
+                            ` : `<i data-lucide="check-circle" class="text-emerald-500 w-6 h-6 ml-auto"></i>`}
+                        </div>
                     </div>
                 `).join('');
-            } else {
-                list.innerHTML = "<p class='text-center text-slate-400 py-10'>Aucun colis.</p>";
+            }
+            lucide.createIcons();
+        }
+
+        // ACTIONS
+        async function createParcel() {
+            const name = document.getElementById('in-name').value;
+            const zone = document.getElementById('in-zone').value;
+            const price = document.getElementById('in-price').value;
+            const landmark = document.getElementById('in-landmark').value;
+
+            if(!name || !price) return alert("Nom et Prix obligatoires");
+
+            const { error } = await supabaseClient.from('parcels').insert([{
+                short_id: 'WF-' + Math.floor(1000 + Math.random() * 9000),
+                customer_name: name,
+                zone: zone,
+                landmark: landmark,
+                product_price: parseFloat(price),
+                delivery_fee: 200,
+                total_to_pay: parseFloat(price) + 200,
+                status: 'en_attente'
+            }]);
+
+            if (error) alert(error.message);
+            else {
+                closeModal();
+                loadData();
             }
         }
 
-        async function addParcel() {
-            const name = prompt("Nom du client ?");
-            const price = prompt("Prix ?");
-            if (!name || !price) return;
-
-            await supabaseClient.from('parcels').insert([{
-                customer_name: name,
-                total_to_pay: parseInt(price) + 200,
-                merchant_phone: currentPhone,
-                status: 'en_attente',
-                short_id: 'WF-' + Math.floor(Math.random() * 9000)
-            }]);
-            loadParcels();
+        async function markDelivered(id) {
+            const { error } = await supabaseClient.from('parcels').update({ status: 'livre' }).eq('id', id);
+            if (error) alert(error.message);
+            else loadData();
         }
 
-        // Au démarrage
-        window.onload = () => { if(window.lucide) window.lucide.createIcons(); };
+        // UI
+        function openModal() { document.getElementById('modal').classList.remove('hidden'); }
+        function closeModal() { document.getElementById('modal').classList.add('hidden'); }
+
+        window.onload = () => {
+            loadData();
+            lucide.createIcons();
+        };
     </script>
 </body>
 </html>
